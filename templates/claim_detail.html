@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Claim {{ claim.claim_number }} - SAP Warranty Validation{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb navigation -->
+<nav aria-label="breadcrumb" class="mb-3 mt-2">
+    <ol class="breadcrumb fs-8">
+        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('exceptions') }}" class="text-decoration-none">Exceptions Queue</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Claim {{ claim.claim_number }}</li>
+    </ol>
+</nav>
+
+<!-- SECTION 17: HEADER -->
+<div class="fiori-card p-4 mb-4 bg-white">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="score-pill score-{{ claim.risk_level.lower() }} shadow-sm">
+                {{ claim.risk_score }}
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h3 class="fw-bold text-dark mb-0">Warranty Claim: {{ claim.claim_number }}</h3>
+                    <span class="badge badge-risk-{{ claim.risk_level.lower() }} fs-7">{{ claim.risk_level }} RISK</span>
+                    <span class="badge badge-sla-{{ 'risk' if claim.sla_status == 'AT RISK' else claim.sla_status.lower() }} fs-7">
+                        SLA: {{ claim.sla_status }}
+                    </span>
+                    <span class="badge {% if claim.status == 'Resolved' %}bg-success text-white{% elif claim.status == 'At Risk' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-dark border{% endif %} fs-7">
+                        {{ claim.status }}
+                    </span>
+                </div>
+                <div class="text-secondary small mt-1">
+                    <span>SAP Document: <strong>{{ claim.document_number }}</strong></span> &bull; 
+                    <span>Cost Centre: <strong>{{ claim.cost_center }}</strong></span> &bull;
+                    <span>Created: <strong>{{ claim.created_at.strftime('%d %b %Y %H:%M') if claim.created_at else '' }}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Re-run validation button -->
+            <form method="POST" action="{{ url_for('revalidate_claim', claim_id=claim.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Re-evaluate all business validation rules and recalculate risk score">
+                    <i class="bi bi-arrow-repeat me-1"></i> Re-evaluate Rules
+                </button>
+            </form>
+
+            <!-- SECTION 23: MARK AS RESOLVED BUTTON -->
+            {% if claim.status != 'Resolved' %}
+            <form method="POST" action="{{ url_for('resolve_claim', claim_id=claim.id) }}" class="d-inline form-resolve-claim">
+                <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm px-3">
+                    <i class="bi bi-check-circle-fill me-1"></i> Mark as Resolved
+                </button>
+            </form>
+            {% else %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-7 fw-bold">
+                <i class="bi bi-check-all me-1"></i> Claim Resolved ({{ claim.resolved_at.strftime('%d %b %Y %H:%M') if claim.resolved_at else 'Verified' }})
+            </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- LEFT COLUMN: Business Data & Validation Results -->
+    <div class="col-lg-7">
+        <!-- SECTION 17: SAP BUSINESS INFORMATION -->
+        <div class="fiori-card p-4 mb-4">
+            <h6 class="fw-bold text-dark text-uppercase mb-3 tracking-wide">
+                <i class="bi bi-file-earmark-text-fill text-primary me-2"></i>SAP Warranty Transaction Details
+            </h6>
+
+            <div class="row g-3 fs-8">
+                <div class="col-sm-6">
+                    <div class="text-secondary">Company Code</div>
+                    <div class="fw-bold text-dark">{{ claim.company_code }} &bull; Northfield Energy UK</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Plant / Location</div>
+                    <div class="fw-bold text-dark">{{ claim.plant }} &bull; Cambridge Tech Park</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Storage Location</div>
+                    <div class="fw-bold text-dark">{{ claim.storage_location or 'SL15' }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Cost Centre</div>
+                    <div class="fw-bold text-dark">{{ claim.cost_center or 'CC-2282' }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Material / Component</div>
+                    <div class="fw-bold text-dark">{{ claim.material }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Business Partner / Vendor</div>
+                    <div class="fw-bold text-dark">{{ claim.business_partner }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Reference Document</div>
+                    <div class="fw-bold text-dark">{{ claim.document_number }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Financial Exposure Amount</div>
+                    <div class="fw-bold text-danger fs-6">£{{ "{:,.2f}".format(claim.amount) }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Requested Date</div>
+                    <div class="fw-bold text-dark">{{ claim.requested_date }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-secondary">Claim Ageing / SLA Threshold</div>
+                    <div class="fw-bold text-dark">{{ claim.age_days }} days (Target: &le; 5 days)</div>
+                </div>
+                <div class="col-sm-12">
+                    <div class="text-secondary">Current Assigned Owner</div>
+                    <div class="fw-bold text-dark">
+                        {% if claim.assigned_to == 'Unassigned' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-person-x me-1"></i>Unassigned</span>
+                        {% else %}
+                            <span class="text-success"><i class="bi bi-person-check-fill me-1"></i>{{ claim.assigned_to }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 18: VALIDATION RESULTS TABLE -->
+        <div class="fiori-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-dark text-uppercase mb-0 tracking-wide">
+                    <i class="bi bi-check2-square text-primary me-2"></i>Automated Validation Results
+                </h6>
+                <span class="badge bg-light text-secondary border">7 Rules Executed</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table fiori-table table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rule Name</th>
+                            <th class="text-center" style="width: 100px;">Status</th>
+                            <th class="text-center" style="width: 90px;">Severity</th>
+                            <th>Diagnostic Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for val in claim.validation_results %}
+                        <tr>
+                            <td class="fw-semibold text-dark">{{ val.rule_name }}</td>
+                            <td class="text-center">
+                                {% if val.status == 'PASS' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-lg me-1"></i>PASS
+                                    </span>
+                                {% elif val.status == 'WARNING' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>WARNING
+                                    </span>
+                                {% elif val.status == 'AT RISK' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                        <i class="bi bi-alarm-fill me-1"></i>AT RISK
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                        <i class="bi bi-x-circle-fill me-1"></i>FAIL
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-secondary border fs-8">{{ val.severity }}</span>
+                            </td>
+                            <td class="small text-secondary">{{ val.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 22: COMMENTS HISTORY & ADD COMMENT FORM -->
+        <div class="fiori-card p-4 mb-4">
+            <h6 class="fw-bold text-dark text-uppercase mb-3 tracking-wide">
+                <i class="bi bi-chat-left-dots-fill text-primary me-2"></i>Operational Comments & Notes
+            </h6>
+
+            <!-- Add Comment Form -->
+            <form method="POST" action="{{ url_for('add_comment', claim_id=claim.id) }}" class="mb-4">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                        <label for="commentAuthor" class="form-label small fw-semibold text-secondary mb-1">Author</label>
+                        <select id="commentAuthor" name="user_name" class="form-select form-select-sm">
+                            <option value="Ravi Kumar (Senior Warranty Specialist)">Ravi Kumar</option>
+                            <option value="Sarah Jenkins (Financial Analyst)">Sarah Jenkins</option>
+                            <option value="David Smith (Plant Service Lead)">David Smith</option>
+                            <option value="Elena Rostova (Compliance Officer)">Elena Rostova</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="commentText" class="form-label small fw-semibold text-secondary mb-1">Add Note / Decision</label>
+                        <div class="input-group">
+                            <input type="text" id="commentText" name="comment" class="form-control form-control-sm" placeholder="Enter operational comment..." required>
+                            <button type="submit" class="btn btn-primary btn-sm px-3">
+                                <i class="bi bi-send-fill me-1"></i> Post
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Comments Timeline List -->
+            <div class="border-top pt-3">
+                {% if claim.comments %}
+                    {% for c in claim.comments %}
+                    <div class="p-3 mb-2 bg-light rounded-3 border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-primary small">
+                                <i class="bi bi-person-fill me-1"></i>{{ c.user_name }}
+                            </span>
+                            <span class="text-muted fs-8">{{ c.created_at.strftime('%d %b %Y %H:%M') if c.created_at else '' }}</span>
+                        </div>
+                        <p class="mb-0 text-dark small">{{ c.comment }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small py-2">No comments recorded yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Risk Explanation, Recommended Action, Assignment & Audit Timeline -->
+    <div class="col-lg-5">
+        <!-- SECTION 19: RISK EXPLANATION PANEL -->
+        <div class="fiori-card p-4 mb-4 border-start border-4 border-danger">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-danger text-uppercase mb-0 tracking-wide">
+                    <i class="bi bi-question-diamond-fill me-2"></i>Why is this claim {{ claim.risk_level }} risk?
+                </h6>
+                <span class="badge badge-risk-{{ claim.risk_level.lower() }}">{{ claim.risk_score }}/100</span>
+            </div>
+
+            <div class="small text-muted mb-3">
+                Explainable risk calculation based on 4 transparent dimensions:
+            </div>
+
+            <ul class="list-group list-group-flush mb-3 small">
+                <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2 bg-transparent">
+                    <i class="bi bi-currency-pound text-danger fs-6 mt-0"></i>
+                    <div>
+                        <strong>Financial Exposure: £{{ "{:,.2f}".format(claim.amount) }}</strong>
+                        <div class="text-muted">Threshold &gt; £50,000 adds maximum 30 points to risk.</div>
+                    </div>
+                </li>
+                <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2 bg-transparent">
+                    <i class="bi bi-hourglass-split text-warning-emphasis fs-6 mt-0"></i>
+                    <div>
+                        <strong>Claim Ageing: {{ claim.age_days }} Days</strong>
+                        <div class="text-muted">In 3–5 day operational window (+15 points ageing score).</div>
+                    </div>
+                </li>
+                <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2 bg-transparent">
+                    <i class="bi bi-alarm text-warning fs-6 mt-0"></i>
+                    <div>
+                        <strong>SLA Status: {{ claim.sla_status }}</strong>
+                        <div class="text-muted">Service level is approaching 5-day breach limit (+15 points SLA score).</div>
+                    </div>
+                </li>
+                <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2 bg-transparent">
+                    <i class="bi bi-shield-exclamation text-primary fs-6 mt-0"></i>
+                    <div>
+                        <strong>Validation Exceptions: Active Warnings</strong>
+                        <div class="text-muted">Automated rule alerts (+15 points exception score).</div>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="p-2 bg-light border rounded small">
+                <strong>Recommended Priority:</strong> <span class="badge badge-risk-{{ claim.risk_level.lower() }}">{{ claim.risk_level }}</span>
+                <span class="text-muted ms-1">&bull; Total Score: <strong>{{ claim.risk_score }} / 100</strong></span>
+            </div>
+        </div>
+
+        <!-- SECTION 20: RECOMMENDED ACTION -->
+        <div class="fiori-card p-4 mb-4 border-start border-4 border-primary">
+            <h6 class="fw-bold text-primary text-uppercase mb-2 tracking-wide">
+                <i class="bi bi-lightbulb-fill me-2"></i>Recommended Next Action
+            </h6>
+            <div class="p-3 bg-primary-subtle text-primary-emphasis rounded-3 mb-2">
+                <div class="fw-bold fs-7 mb-1">{{ claim.recommended_action.split(':')[0] if ':' in (claim.recommended_action or '') else claim.recommended_action }}</div>
+                <div class="small">{{ claim.recommended_action.split(':', 1)[1] if ':' in (claim.recommended_action or '') else 'Review claim parameters and proceed with operational remediation.' }}</div>
+            </div>
+        </div>
+
+        <!-- SECTION 21: ASSIGN OWNER FORM -->
+        <div class="fiori-card p-4 mb-4">
+            <h6 class="fw-bold text-dark text-uppercase mb-3 tracking-wide">
+                <i class="bi bi-person-plus-fill text-primary me-2"></i>Assign Accountable Owner
+            </h6>
+            <form method="POST" action="{{ url_for('assign_owner', claim_id=claim.id) }}">
+                <div class="mb-3">
+                    <label for="assignSelect" class="form-label small fw-semibold text-secondary">Responsible Specialist</label>
+                    <select id="assignSelect" name="assigned_to" class="form-select form-select-sm" required>
+                        <option value="Ravi Kumar" {% if claim.assigned_to == 'Ravi Kumar' %}selected{% endif %}>Ravi Kumar (Senior Warranty Specialist)</option>
+                        <option value="Sarah Jenkins" {% if claim.assigned_to == 'Sarah Jenkins' %}selected{% endif %}>Sarah Jenkins (Financial Analyst)</option>
+                        <option value="David Smith" {% if claim.assigned_to == 'David Smith' %}selected{% endif %}>David Smith (Plant Service Lead)</option>
+                        <option value="Elena Rostova" {% if claim.assigned_to == 'Elena Rostova' %}selected{% endif %}>Elena Rostova (Compliance & MDG Officer)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">
+                    <i class="bi bi-check2-circle me-1"></i> Update Assignment
+                </button>
+            </form>
+        </div>
+
+        <!-- SECTION 24: AUDIT TIMELINE -->
+        <div class="fiori-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-dark text-uppercase mb-0 tracking-wide">
+                    <i class="bi bi-clock-history text-primary me-2"></i>Audit Trail & Governance Timeline
+                </h6>
+                <span class="badge bg-light text-secondary border">Immutable Logs</span>
+            </div>
+
+            <ul class="timeline mb-0">
+                {% for log in claim.audit_logs %}
+                <li class="timeline-item {% if 'Resolved' in log.action %}success{% elif 'Risk' in log.action or 'Validation' in log.action %}warning{% else %}primary{% endif %}">
+                    <div class="timeline-marker"></div>
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <span class="fw-bold text-dark small">{{ log.action }}</span>
+                        <span class="text-muted fs-8">{{ log.timestamp.strftime('%d %b %H:%M') if log.timestamp else '' }}</span>
+                    </div>
+                    <div class="text-primary small fs-8">By: {{ log.performed_by }}</div>
+                    <div class="text-secondary small mt-1">{{ log.description }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

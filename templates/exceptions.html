@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Prioritised Exception Queue - SAP Warranty Claim Validation{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-3 mt-2">
+    <div class="col-md-7">
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-exclamation-triangle text-warning me-2"></i>Prioritised Exception Work Queue
+        </h3>
+        <p class="text-secondary mb-0">
+            Role-based exception backlog ordered by dynamic risk severity, financial exposure, and SLA vulnerability.
+        </p>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+        <span class="badge bg-light text-secondary border px-3 py-2 fs-7 me-2">
+            Showing <strong>{{ claims|length }}</strong> active claims
+        </span>
+        <a href="{{ url_for('exceptions') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-repeat me-1"></i>Reset Filters
+        </a>
+    </div>
+</div>
+
+<!-- SECTION 16: WORKING FILTERS PANEL -->
+<div class="fiori-card p-3 mb-4 bg-white">
+    <form id="exceptionFilterForm" method="GET" action="{{ url_for('exceptions') }}">
+        <div class="row g-2 align-items-end">
+            <!-- Search Text -->
+            <div class="col-lg-3 col-md-6">
+                <label for="tableSearchInput" class="form-label small fw-semibold text-secondary mb-1">
+                    <i class="bi bi-search me-1"></i>Search (Claim, BP, Material)
+                </label>
+                <input type="text" id="tableSearchInput" name="q" class="form-control form-control-sm" placeholder="e.g. PRD-460082 or Baltic..." value="{{ current_filters.q or '' }}">
+            </div>
+
+            <!-- Risk Level Filter -->
+            <div class="col-lg-2 col-md-4">
+                <label for="filterRisk" class="form-label small fw-semibold text-secondary mb-1">Risk Level</label>
+                <select id="filterRisk" name="risk_level" class="form-select form-select-sm">
+                    <option value="">All Risk Levels</option>
+                    <option value="CRITICAL" {% if current_filters.risk_level == 'CRITICAL' %}selected{% endif %}>Critical (80–100)</option>
+                    <option value="HIGH" {% if current_filters.risk_level == 'HIGH' %}selected{% endif %}>High (60–79)</option>
+                    <option value="MEDIUM" {% if current_filters.risk_level == 'MEDIUM' %}selected{% endif %}>Medium (30–59)</option>
+                    <option value="LOW" {% if current_filters.risk_level == 'LOW' %}selected{% endif %}>Low (0–29)</option>
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-lg-2 col-md-4">
+                <label for="filterStatus" class="form-label small fw-semibold text-secondary mb-1">Status</label>
+                <select id="filterStatus" name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="At Risk" {% if current_filters.status == 'At Risk' %}selected{% endif %}>At Risk</option>
+                    <option value="Pending Validation" {% if current_filters.status == 'Pending Validation' %}selected{% endif %}>Pending Validation</option>
+                    <option value="Under Review" {% if current_filters.status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                    <option value="Escalated" {% if current_filters.status == 'Escalated' %}selected{% endif %}>Escalated</option>
+                    <option value="Resolved" {% if current_filters.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                </select>
+            </div>
+
+            <!-- Plant Filter -->
+            <div class="col-lg-1 col-md-3">
+                <label for="filterPlant" class="form-label small fw-semibold text-secondary mb-1">Plant</label>
+                <select id="filterPlant" name="plant" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for p in filter_options.plants %}
+                    <option value="{{ p }}" {% if current_filters.plant == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Business Partner Filter -->
+            <div class="col-lg-2 col-md-5">
+                <label for="filterPartner" class="form-label small fw-semibold text-secondary mb-1">Business Partner</label>
+                <select id="filterPartner" name="partner" class="form-select form-select-sm">
+                    <option value="">All Partners</option>
+                    {% for bp in filter_options.partners %}
+                    <option value="{{ bp }}" {% if current_filters.partner == bp %}selected{% endif %}>{{ bp }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Assigned Owner Filter -->
+            <div class="col-lg-2 col-md-4">
+                <label for="filterOwner" class="form-label small fw-semibold text-secondary mb-1">Assigned Owner</label>
+                <select id="filterOwner" name="owner" class="form-select form-select-sm">
+                    <option value="">All Owners</option>
+                    <option value="Unassigned" {% if current_filters.owner == 'Unassigned' %}selected{% endif %}>Unassigned Only</option>
+                    {% for ow in filter_options.owners %}
+                        {% if ow != 'Unassigned' %}
+                        <option value="{{ ow }}" {% if current_filters.owner == ow %}selected{% endif %}>{{ ow }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <div class="small text-muted">
+                <i class="bi bi-funnel-fill text-primary me-1"></i>
+                Active Criteria: 
+                {% if active_filter_summary %}
+                    <span class="badge bg-secondary-subtle text-dark border">{{ active_filter_summary }}</span>
+                {% else %}
+                    <span class="text-secondary">Default Queue (Unfiltered)</span>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('exceptions') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                <button type="submit" class="btn btn-sm btn-primary px-3">
+                    <i class="bi bi-filter me-1"></i> Apply Filters
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- SECTION 14: MAIN EXCEPTION QUEUE TABLE -->
+<div class="fiori-card p-0 overflow-hidden shadow-sm">
+    <div class="table-responsive">
+        <table class="table fiori-table filterable-table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 130px;">Claim</th>
+                    <th>Partner</th>
+                    <th>Material</th>
+                    <th class="text-end">Amount (£)</th>
+                    <th class="text-center">Age</th>
+                    <th class="text-center">Risk</th>
+                    <th class="text-center">Score</th>
+                    <th class="text-center">SLA</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                    <th class="text-end" style="width: 110px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if claims %}
+                    {% for claim in claims %}
+                    <tr class="{% if claim.claim_number == 'PRD-460082' %}table-warning bg-warning-subtle{% endif %}">
+                        <!-- Claim -->
+                        <td>
+                            <a href="{{ url_for('claim_detail', claim_id=claim.id) }}" class="fw-bold text-primary text-decoration-none">
+                                {{ claim.claim_number }}
+                            </a>
+                            {% if claim.claim_number == 'PRD-460082' %}
+                            <div><span class="badge bg-warning text-dark border border-warning" style="font-size: 0.68rem;">INTERVIEW DEMO</span></div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Partner -->
+                        <td>
+                            <div class="fw-semibold text-dark">{{ claim.business_partner }}</div>
+                            <small class="text-muted">Plant: {{ claim.plant }} &bull; CC: {{ claim.cost_center }}</small>
+                        </td>
+
+                        <!-- Material -->
+                        <td>
+                            <span class="text-truncate d-inline-block" style="max-width: 180px;" title="{{ claim.material }}">
+                                {{ claim.material }}
+                            </span>
+                        </td>
+
+                        <!-- Amount -->
+                        <td class="text-end fw-bold">
+                            £{{ "{:,.2f}".format(claim.amount) }}
+                        </td>
+
+                        <!-- Age -->
+                        <td class="text-center">
+                            <span class="badge {% if claim.age_days > 5 %}bg-danger-subtle text-danger border border-danger-subtle{% elif claim.age_days >= 3 %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-light text-secondary border{% endif %}">
+                                {{ claim.age_days }} days
+                            </span>
+                        </td>
+
+                        <!-- Risk Badge -->
+                        <td class="text-center">
+                            <span class="badge badge-risk-{{ claim.risk_level.lower() }}">
+                                {{ claim.risk_level }}
+                            </span>
+                        </td>
+
+                        <!-- Risk Score -->
+                        <td class="text-center">
+                            <span class="badge bg-dark-subtle text-dark border fw-bold px-2 py-1 fs-7">
+                                {{ claim.risk_score }}
+                            </span>
+                        </td>
+
+                        <!-- SLA Badge -->
+                        <td class="text-center">
+                            <span class="badge badge-sla-{{ 'risk' if claim.sla_status == 'AT RISK' else claim.sla_status.lower() }}">
+                                {{ claim.sla_status }}
+                            </span>
+                        </td>
+
+                        <!-- Owner -->
+                        <td>
+                            {% if claim.assigned_to == 'Unassigned' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                    <i class="bi bi-person-x me-1"></i>Unassigned
+                                </span>
+                            {% else %}
+                                <span class="text-dark fw-medium small">
+                                    <i class="bi bi-person-check text-success me-1"></i>{{ claim.assigned_to }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td>
+                            <span class="badge {% if claim.status == 'Resolved' %}bg-success text-white{% elif claim.status == 'At Risk' %}bg-danger-subtle text-danger border border-danger-subtle{% elif claim.status == 'Escalated' %}bg-danger text-white{% else %}bg-secondary-subtle text-dark border{% endif %}">
+                                {{ claim.status }}
+                            </span>
+                        </td>
+
+                        <!-- Action -->
+                        <td class="text-end">
+                            <a href="{{ url_for('claim_detail', claim_id=claim.id) }}" class="btn btn-sm btn-primary">
+                                Open <i class="bi bi-arrow-right-short"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="11" class="text-center py-5 text-secondary">
+                            <i class="bi bi-clipboard2-check fs-2 text-muted mb-2 d-block"></i>
+                            <h6 class="fw-bold">No warranty claims match your filter criteria.</h6>
+                            <p class="small text-muted mb-3">Try adjusting your search keywords, risk level, or plant selection.</p>
+                            <a href="{{ url_for('exceptions') }}" class="btn btn-sm btn-outline-primary">Reset Filters</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

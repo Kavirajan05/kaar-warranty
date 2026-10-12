@@ -1,0 +1,343 @@
+/* SAP Fiori & Horizon Inspired Enterprise Theme */
+:root {
+  --sap-shell-bg: #1c2d42;
+  --sap-shell-text: #ffffff;
+  --sap-primary-blue: #0854a0;
+  --sap-hover-blue: #0a6ed1;
+  --sap-bg-canvas: #f5f7fa;
+  --sap-card-bg: #ffffff;
+  --sap-border-color: #d9e1e8;
+  --sap-text-primary: #1d2d3e;
+  --sap-text-secondary: #596a7a;
+
+  /* Risk & Status Semantics */
+  --risk-critical: #bb0000;
+  --risk-critical-bg: #fde8e8;
+  --risk-high: #e9730c;
+  --risk-high-bg: #fef0e6;
+  --risk-medium: #df9e00;
+  --risk-medium-bg: #fff8e6;
+  --risk-low: #107e3e;
+  --risk-low-bg: #e7f6ec;
+
+  --sla-safe: #107e3e;
+  --sla-safe-bg: #e7f6ec;
+  --sla-risk: #e9730c;
+  --sla-risk-bg: #fef0e6;
+  --sla-breached: #bb0000;
+  --sla-breached-bg: #fde8e8;
+}
+
+body {
+  background-color: var(--sap-bg-canvas);
+  color: var(--sap-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fiori Shell Bar */
+.fiori-shellbar {
+  background: linear-gradient(135deg, #1c2d42 0%, #0854a0 100%);
+  color: var(--sap-shell-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fiori-shellbar .navbar-brand {
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fiori-shellbar .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.fiori-shellbar .nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.fiori-shellbar .nav-link.active {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-bottom: 3px solid #ffcc00;
+}
+
+/* System sub-header / context bar */
+.sap-context-bar {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--sap-border-color);
+  padding: 0.6rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Cards */
+.fiori-card {
+  background: var(--sap-card-bg);
+  border: 1px solid var(--sap-border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-card {
+  border-left: 4px solid var(--sap-primary-blue);
+  padding: 1.25rem;
+}
+
+.kpi-card.critical {
+  border-left-color: var(--risk-critical);
+}
+
+.kpi-card.warning {
+  border-left-color: var(--risk-high);
+}
+
+.kpi-card.success {
+  border-left-color: var(--risk-low);
+}
+
+.kpi-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.25rem 0;
+}
+
+.kpi-label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--sap-text-secondary);
+  font-weight: 600;
+}
+
+/* Risk Badges */
+.badge-risk-critical {
+  background-color: var(--risk-critical-bg);
+  color: var(--risk-critical);
+  border: 1px solid #f8b4b4;
+  font-weight: 700;
+  padding: 0.35em 0.7em;
+}
+
+.badge-risk-high {
+  background-color: var(--risk-high-bg);
+  color: var(--risk-high);
+  border: 1px solid #fed7aa;
+  font-weight: 700;
+  padding: 0.35em 0.7em;
+}
+
+.badge-risk-medium {
+  background-color: var(--risk-medium-bg);
+  color: #946800;
+  border: 1px solid #fef08a;
+  font-weight: 700;
+  padding: 0.35em 0.7em;
+}
+
+.badge-risk-low {
+  background-color: var(--risk-low-bg);
+  color: var(--risk-low);
+  border: 1px solid #bbf7d0;
+  font-weight: 700;
+  padding: 0.35em 0.7em;
+}
+
+/* SLA Badges */
+.badge-sla-safe {
+  background-color: var(--sla-safe-bg);
+  color: var(--sla-safe);
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+}
+
+.badge-sla-risk {
+  background-color: var(--sla-risk-bg);
+  color: var(--sla-risk);
+  border: 1px solid #fed7aa;
+  font-weight: 600;
+}
+
+.badge-sla-breached {
+  background-color: var(--sla-breached-bg);
+  color: var(--sla-breached);
+  border: 1px solid #f8b4b4;
+  font-weight: 600;
+}
+
+/* Table styling */
+.fiori-table thead th {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 700;
+  border-bottom: 2px solid var(--sap-border-color);
+  padding: 0.75rem 0.85rem;
+}
+
+.fiori-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.fiori-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.fiori-table td {
+  padding: 0.75rem 0.85rem;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+  list-style: none;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0.75rem;
+  width: 2px;
+  background-color: #cbd5e1;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2rem;
+  top: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: var(--sap-primary-blue);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px #93c5fd;
+}
+
+.timeline-item.success .timeline-marker {
+  background-color: var(--risk-low);
+  box-shadow: 0 0 0 2px #bbf7d0;
+}
+
+.timeline-item.warning .timeline-marker {
+  background-color: var(--risk-high);
+  box-shadow: 0 0 0 2px #fed7aa;
+}
+
+.timeline-item.danger .timeline-marker {
+  background-color: var(--risk-critical);
+  box-shadow: 0 0 0 2px #f8b4b4;
+}
+
+/* Risk Score Gauge Mini */
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.score-critical { background-color: var(--risk-critical); }
+.score-high { background-color: var(--risk-high); }
+.score-medium { background-color: var(--risk-medium); }
+.score-low { background-color: var(--risk-low); }
+
+/* Custom Progress Bar for Analytics */
+.bar-chart-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  font-size: 0.88rem;
+}
+
+.bar-chart-label {
+  width: 170px;
+  font-weight: 500;
+  color: var(--sap-text-primary);
+  flex-shrink: 0;
+}
+
+.bar-chart-bar {
+  flex-grow: 1;
+  height: 20px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0 12px;
+}
+
+.bar-chart-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.bar-chart-value {
+  width: 90px;
+  text-align: right;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Callout Boxes */
+.fiori-callout {
+  border-left: 4px solid var(--sap-primary-blue);
+  background-color: #f0f7ff;
+  padding: 1rem 1.25rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.fiori-callout-warning {
+  border-left-color: var(--risk-high);
+  background-color: var(--risk-high-bg);
+}
+
+.fiori-callout-danger {
+  border-left-color: var(--risk-critical);
+  background-color: var(--risk-critical-bg);
+}
+
+.fiori-callout-success {
+  border-left-color: var(--risk-low);
+  background-color: var(--risk-low-bg);
+}
+
+/* Footer */
+footer {
+  margin-top: auto;
+  background-color: #ffffff;
+  border-top: 1px solid var(--sap-border-color);
+  font-size: 0.82rem;
+  color: var(--sap-text-secondary);
+}

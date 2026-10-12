@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Warranty Claim Not Found{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-6 text-center">
+        <div class="fiori-card p-5">
+            <i class="bi bi-file-earmark-x text-danger display-1 mb-3"></i>
+            <h3 class="fw-bold text-dark mb-2">404 — Warranty Claim Not Found</h3>
+            <p class="text-secondary mb-4">
+                The requested warranty claim document or identifier does not exist in the Northfield SAP exception ledger.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ url_for('exceptions') }}" class="btn btn-primary px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Exception Queue
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary px-3">
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Audit & Governance Reports - SAP Warranty Management{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4 mt-2">
+    <div class="col-md-7">
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-file-earmark-spreadsheet-fill text-primary me-2"></i>Audit & Compliance Reporting
+        </h3>
+        <p class="text-secondary mb-0">
+            Exportable tabular records for financial reconciliation, internal audit, and supplier service level governance.
+        </p>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+        <a href="{{ url_for('export_csv') }}" class="btn btn-success fw-semibold shadow-sm px-3">
+            <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Download CSV Report
+        </a>
+    </div>
+</div>
+
+<div class="fiori-card p-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <div>
+            <h6 class="fw-bold text-dark text-uppercase mb-0 tracking-wide">
+                Master Warranty Exception Ledger ({{ claims|length }} Records)
+            </h6>
+            <small class="text-muted">Direct snapshot from local SQLite repository (Simulating SAP OData V4 extraction)</small>
+        </div>
+
+        <div style="max-width: 300px;">
+            <input type="text" id="tableSearchInput" class="form-control form-control-sm" placeholder="Filter ledger rows...">
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table fiori-table filterable-table table-bordered table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Claim</th>
+                    <th>Partner</th>
+                    <th class="text-end">Amount (£)</th>
+                    <th class="text-center">Age</th>
+                    <th class="text-center">Risk Level</th>
+                    <th class="text-center">Score</th>
+                    <th class="text-center">SLA Status</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                    <th>Recommended Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in claims %}
+                <tr class="{% if c.claim_number == 'PRD-460082' %}table-warning bg-warning-subtle{% endif %}">
+                    <td>
+                        <a href="{{ url_for('claim_detail', claim_id=c.id) }}" class="fw-bold text-primary text-decoration-none">
+                            {{ c.claim_number }}
+                        </a>
+                    </td>
+                    <td>{{ c.business_partner }}</td>
+                    <td class="text-end fw-bold">£{{ "{:,.2f}".format(c.amount) }}</td>
+                    <td class="text-center">{{ c.age_days }}d</td>
+                    <td class="text-center">
+                        <span class="badge badge-risk-{{ c.risk_level.lower() }}">{{ c.risk_level }}</span>
+                    </td>
+                    <td class="text-center fw-bold">{{ c.risk_score }}</td>
+                    <td class="text-center">
+                        <span class="badge badge-sla-{{ 'risk' if c.sla_status == 'AT RISK' else c.sla_status.lower() }}">{{ c.sla_status }}</span>
+                    </td>
+                    <td>{{ c.assigned_to }}</td>
+                    <td>
+                        <span class="badge {% if c.status == 'Resolved' %}bg-success text-white{% elif c.status == 'At Risk' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-dark border{% endif %}">
+                            {{ c.status }}
+                        </span>
+                    </td>
+                    <td class="small text-secondary" style="max-width: 250px;">
+                        <span class="text-truncate d-block" title="{{ c.recommended_action }}">
+                            {{ c.recommended_action.split(':')[0] if ':' in (c.recommended_action or '') else c.recommended_action }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.pytest_cache/
+test_app.py
+demo_walkthrough.py

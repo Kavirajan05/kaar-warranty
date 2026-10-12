@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Management Analytics - SAP Warranty Exception Management{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4 mt-2">
+    <div class="col-md-8">
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Executive Warranty Exception Analytics
+        </h3>
+        <p class="text-secondary mb-0">
+            Strategic visibility into capital exposure, operational bottlenecks, root cause defects, and plant compliance.
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <a href="{{ url_for('reports') }}" class="btn btn-outline-primary btn-sm fw-semibold">
+            <i class="bi bi-download me-1"></i> Export Tabular Report
+        </a>
+    </div>
+</div>
+
+<!-- SECTION 25: SUMMARY KPI STRIP -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="fiori-card p-3">
+            <div class="text-secondary small fw-semibold text-uppercase">Unresolved Exposure</div>
+            <div class="fs-4 fw-bold text-danger">£{{ "{:,.2f}".format(analytics.total_open_exposure) }}</div>
+            <div class="small text-muted">{{ analytics.open_claims_count }} active exception claims</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="fiori-card p-3">
+            <div class="text-secondary small fw-semibold text-uppercase">Resolved Exposure</div>
+            <div class="fs-4 fw-bold text-success">£{{ "{:,.2f}".format(analytics.total_resolved_exposure) }}</div>
+            <div class="small text-muted">{{ analytics.resolved_claims_count }} recovered / credited claims</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="fiori-card p-3">
+            <div class="text-secondary small fw-semibold text-uppercase">High & Critical Risk</div>
+            <div class="fs-4 fw-bold text-warning-emphasis">{{ analytics.high_and_critical_count }}</div>
+            <div class="small text-muted">Requires expedited senior review</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="fiori-card p-3">
+            <div class="text-secondary small fw-semibold text-uppercase">Breached SLAs</div>
+            <div class="fs-4 fw-bold text-danger">{{ analytics.sla_breached_count }}</div>
+            <div class="small text-muted">Exceeded 5-day handling target</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Exceptions by Risk Tier -->
+    <div class="col-lg-6">
+        <div class="fiori-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-dark text-uppercase mb-0 tracking-wide">
+                    <i class="bi bi-shield-shaded text-primary me-2"></i>Exceptions by Risk Tier
+                </h6>
+                <span class="badge bg-light text-secondary border">Severity Distribution</span>
+            </div>
+
+            {% for tier in analytics.risk_distribution %}
+            <div class="bar-chart-row">
+                <div class="bar-chart-label {{ tier.color_class }}">
+                    {{ tier.name }} ({{ tier.score_range }})
+                </div>
+                <div class="bar-chart-bar">
+                    <div class="bar-chart-fill {{ tier.bg_class }}" style="width: {{ tier.percentage }}%;"></div>
+                </div>
+                <div class="bar-chart-value">{{ tier.count }} ({{ tier.percentage }}%)</div>
+            </div>
+            {% endfor %}
+
+            <div class="mt-4 p-3 bg-light rounded-3 small text-secondary">
+                <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                Claims are classified into tiers based on weighted exposure, age, SLA status, and validation defect frequency.
+            </div>
+        </div>
+    </div>
+
+    <!-- Exceptions by Cause -->
+    <div class="col-lg-6">
+        <div class="fiori-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-dark text-uppercase mb-0 tracking-wide">
+                    <i class="bi bi-exclamation-octagon text-danger me-2"></i>Exceptions by Cause
+                </h6>
+                <span class="badge bg-light text-secondary border">Defect Profiling</span>
+            </div>
+
+            {% for cause in analytics.cause_distribution %}
+            <div class="bar-chart-row">
+                <div class="bar-chart-label">{{ cause.name }}</div>
+                <div class="bar-chart-bar">
+                    <div class="bar-chart-fill {{ cause.bg_class }}" style="width: {{ cause.percentage }}%;"></div>
+                </div>
+                <div class="bar-chart-value">{{ cause.count }}</div>
+            </div>
+            {% endfor %}
+
+            <div class="mt-4 p-3 bg-light rounded-3 small text-secondary">
+                <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                Root causes are identified dynamically by the validation engine to direct targeted operational remediation.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Ageing Distribution (0–2, 3–5, >5 days) -->
+    <div class="col-lg-4">
+        <div class="fiori-card p-4 h-100">
+            <h6 class="fw-bold text-dark text-uppercase mb-3 tracking-wide">
+                <i class="bi bi-clock-history text-primary me-2"></i>Ageing Buckets
+            </h6>
+
+            {% for b in analytics.ageing_buckets %}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span>{{ b.label }}</span>
+                    <span>{{ b.count }} claims ({{ b.pct }}%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar {{ b.bg_class }}" role="progressbar" style="width: {{ b.pct }}%;"></div>
+                </div>
+                <div class="text-muted fs-8 mt-1">Capital Exposure: £{{ "{:,.2f}".format(b.amount) }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Exceptions by Plant Location -->
+    <div class="col-lg-4">
+        <div class="fiori-card p-4 h-100">
+            <h6 class="fw-bold text-dark text-uppercase mb-3 tracking-wide">
+                <i class="bi bi-geo-alt-fill text-primary me-2"></i>Plant Performance
+            </h6>
+
+            {% for pl in analytics.plant_metrics %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <div class="fw-bold text-dark small">Plant {{ pl.plant }}</div>
+                    <div class="text-muted fs-8">{{ pl.location_name }}</div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold text-danger small">£{{ "{:,.0f}".format(pl.amount) }}</div>
+                    <div class="text-muted fs-8">{{ pl.count }} claims</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Exceptions by Business Partner Ranking -->
+    <div class="col-lg-4">
+        <div class="fiori-card p-4 h-100">
+            <h6 class="fw-bold text-dark text-uppercase mb-3 tracking-wide">
+                <i class="bi bi-building-fill-exclamation text-primary me-2"></i>Vendor Exposure
+            </h6>
+
+            {% for bp in analytics.partner_metrics %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div class="text-truncate" style="max-width: 170px;">
+                    <div class="fw-bold text-dark small text-truncate" title="{{ bp.partner }}">{{ bp.partner }}</div>
+                    <div class="text-muted fs-8">{{ bp.count }} claims</div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold text-danger small">£{{ "{:,.0f}".format(bp.amount) }}</div>
+                    <div class="text-muted fs-8">Avg: £{{ "{:,.0f}".format(bp.avg_amount) }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
